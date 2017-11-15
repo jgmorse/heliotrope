@@ -16,6 +16,7 @@ class EPubsController < ApplicationController
       if @presenter.parent.present?
         @monograph_presenter = Hyrax::PresenterFactory.build_for(ids: [@presenter.parent.id], presenter_class: Hyrax::MonographPresenter, presenter_args: current_ability).first
       end
+      @feedback = Feedback.new
       render layout: false
     else
       Rails.logger.info("EPubsController.show(#{params[:id]}) is not an EPub.")

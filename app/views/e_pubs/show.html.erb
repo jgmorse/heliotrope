@@ -9,22 +9,55 @@
 <% end %>
 <div id="epub" class="<%= @subdomain %>">
   <div id="reader"></div>
+  <% if @feedback.present? %>
+      <!-- Modal -->
+      <div id="feedbackModal" class="modal fade" role="dialog">
+        <div class="modal-dialog" style="width:<%= @feedback_width %>px;">
+          <!-- Modal content-->
+          <div class="modal-content">
+            <%= simple_form_for @feedback, html: { id: 'feedbackForm' } do |f| %>
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Feedback</h4>
+              </div>
+              <div class="modal-body">
+              <% if @feedback.errors.any? %>
+                <div id="error_explanation">
+                  <h2><%= pluralize(@feedback.errors.count, "error") %> prohibited this feedback from being saved:</h2>
+                  <ul>
+                    <% @feedback.errors.full_messages.each do |message| %>
+                      <li><%= message %></li>
+                    <% end %>
+                  </ul>
+                </div>
+              <% end %>
+                <%= f.input :feedback, label: 'Feedback', required: true %>
+              </div>
+              <div class="modal-footer">
+                <%= f.submit label: 'Submit', value: 'Submit', id: 'feedbackSubmit', class: 'btn btn-default' %>
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+  <% end %>
   <script type="text/javascript">
     if ( true ) {
-            //$("body").addClass("reading");
-            var reader = cozy.reader('reader', {
-                href: "<%= "#{main_app.epub_url.gsub!(/\?.*/, '')}/" %>",
-                metadata: {
-                    doi: '<%= @citable_link %>',
-                    // TO-DO: iterate all creator given and family names for monograph
-                    // creator: [
-                    //    ''
-                    // ],
-                    // TO-DO: we currently don't store location metadata in the monograph
-                    // record. Should we? Can we rely on all EPUBs having location?
-                    location: 'Ann Arbor, MI'
-                }
-            });
+      //$("body").addClass("reading");
+      var reader = cozy.reader('reader', {
+        href: "<%= "#{main_app.epub_url.gsub!(/\?.*/, '')}/" %>",
+        metadata: {
+          doi: '<%= @citable_link %>',
+          // TO-DO: iterate all creator given and family names for monograph
+          // creator: [
+          //    ''
+          // ],
+          // TO-DO: we currently don't store location metadata in the monograph
+          // record. Should we? Can we rely on all EPUBs having location?
+          location: 'Ann Arbor, MI'
+        }
+      });
       // Close reader/Return to previous screen widget
       cozy.control.widget.button({
   	    region: 'top.header.left',
@@ -42,26 +75,49 @@
             template: `<div class="logo"><%= image_tag logo(@subdomain), alt: @subdomain %>`,
             data: { title: "<%= @subdomain %>" }
           }).addTo(reader);
-          <% end %>
+        <% end %>
       <% end %>
       // Book/chapter title widget
       cozy.control.title({ region: 'top.header.left' }).addTo(reader);
 
       // Table of contents widget
       cozy.control.contents({ region: 'top.toolbar.left' }).addTo(reader);
+
       // Permalink widget
       cozy.control.widget.panel({
         region: 'top.toolbar.left',
         data: { title: "<%= @citable_link %>"},
   	    template: `<div class="permalink-label"><label class="u-screenreader" for="permalink">Permalink</label><form><input data-slot="title" type="text" id="permalink" value="" readonly="readonly" onclick="this.select(); document.execCommand('copy');"></form></div>`,
       }).addTo(reader);
+
       // Citation widget
       cozy.control.citation({ region: 'top.toolbar.left' }).addTo(reader);
+
       // Search widget
       <% unless Heliotrope::Application.config.cozy_epub_engine == 'readium' %>
-        cozy.control.search({
-          region: 'top.toolbar.left',
-          searchUrl: "<%= @search_url %>"
+      cozy.control.search({
+        region: 'top.toolbar.left',
+        searchUrl: "<%= @search_url %>"
+      }).addTo(reader);
+      <% end %>
+
+      // Feedback widget
+      <% if @feedback.present? %>
+        $('#feedbackModal').on('show.bs.modal', function() {
+          $('#feedbackForm')[0].reset();
+          $('#feedbackSubmit').removeAttr('disabled');
+        });
+        $('#feedbackModal').on('shown.bs.modal', function() {
+          $('#feedbackForm')[0].elements[3].focus();
+        });
+        $('#feedbackSubmit').click(function() {
+          $('#feedbackModal').modal('hide');
+        });
+        cozy.control.widget.button({
+          region: 'top.toolbar.right',
+          template: '<button id="feedbackButton" type="button" class="button--sm" data-toggle="modal" data-target="#feedbackModal">Feedback</button>',
+          onClick: function() {
+          }
         }).addTo(reader);
       <% end %>
 
